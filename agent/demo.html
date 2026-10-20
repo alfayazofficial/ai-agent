@@ -1,0 +1,25 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Voice Agent Demo</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:640px;margin:2rem auto;padding:0 1rem;background:#0f172a;color:#e2e8f0}
+button{padding:.7rem 1.2rem;border:0;border-radius:8px;font-size:1rem;cursor:pointer;background:#22c55e;color:#06210f;margin-right:.5rem}
+button.stop{background:#ef4444;color:#fff}#log{margin-top:1rem;background:#1e293b;border-radius:8px;padding:1rem;min-height:220px}
+.a{color:#7dd3fc}.u{color:#fde68a}input{width:70%;padding:.6rem;border-radius:8px;border:0}
+small{color:#94a3b8}
+</style></head><body>
+<h2>📞 AI Voice Agent - free browser call</h2>
+<p><small>Uses your browser's free speech recognition + voice (Chrome/Edge). Or type below.</small></p>
+<button id="call">Start call</button><button id="hang" class="stop">Hang up</button>
+<div id="log"></div><p><input id="t" placeholder="…or type what the caller says"><button id="send">Send</button></p>
+<script>
+const sid=crypto.randomUUID(),log=document.getElementById('log');let live=false,rec=null;
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+function add(c,t){log.insertAdjacentHTML('beforeend',`<div class="${c}"><b>${c=='a'?'Agent':'You'}:</b> ${t}</div>`)}
+async function api(body){const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:sid,...body})});return r.json()}
+function speak(t,cb){const u=new SpeechSynthesisUtterance(t);u.onend=cb;speechSynthesis.cancel();speechSynthesis.speak(u)}
+function handle(r){add('a',r.say);if(r.end){live=false;speak(r.say);return}speak(r.say,listen)}
+function listen(){if(!live||!SR)return;rec=new SR();rec.lang='en-US';rec.onresult=async e=>{const t=e.results[0][0].transcript;add('u',t);handle(await api({text:t}))};rec.onerror=()=>{if(live)listen()};rec.onnomatch=()=>{};rec.start()}
+document.getElementById('call').onclick=async()=>{live=true;log.innerHTML='';handle(await api({start:true}))};
+document.getElementById('hang').onclick=()=>{live=false;rec&&rec.abort();speechSynthesis.cancel()};
+document.getElementById('send').onclick=async()=>{const i=document.getElementById('t');if(!i.value)return;add('u',i.value);const v=i.value;i.value='';handle(await api({text:v}))};
+</script></body></html>

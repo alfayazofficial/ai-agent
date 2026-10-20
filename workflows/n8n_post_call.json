@@ -1,0 +1,67 @@
+{
+  "name": "AI Voice Agent - post-call automation",
+  "nodes": [
+    {
+      "parameters": {"httpMethod": "POST", "path": "voice-agent-call", "responseMode": "onReceived"},
+      "id": "1", "name": "Call completed (webhook)", "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1, "position": [240, 300], "webhookId": "voice-agent-call"
+    },
+    {
+      "parameters": {
+        "rules": {"values": [
+          {"conditions": {"options": {"caseSensitive": true, "typeValidation": "strict"}, "combinator": "and",
+            "conditions": [{"leftValue": "={{ $json.body.call.outcome }}", "rightValue": "appointment_booked", "operator": {"type": "string", "operation": "equals"}}]},
+           "renameOutput": true, "outputKey": "appointment"},
+          {"conditions": {"options": {"caseSensitive": true, "typeValidation": "strict"}, "combinator": "and",
+            "conditions": [{"leftValue": "={{ $json.body.call.outcome }}", "rightValue": "message_taken", "operator": {"type": "string", "operation": "equals"}}]},
+           "renameOutput": true, "outputKey": "message"}
+        ]},
+        "options": {"fallbackOutput": "extra"}
+      },
+      "id": "2", "name": "Route by outcome", "type": "n8n-nodes-base.switch",
+      "typeVersion": 3, "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create", "calendar": {"__rl": true, "mode": "list", "value": "primary"},
+        "start": "={{ $json.body.appointments[0].start }}", "end": "={{ $json.body.appointments[0].end }}",
+        "additionalFields": {"summary": "={{ 'Appointment: ' + $json.body.appointments[0].name }}",
+                              "description": "={{ $json.body.call.summary }}"}
+      },
+      "id": "3", "name": "Google Calendar event (free)", "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2, "position": [740, 160]
+    },
+    {
+      "parameters": {
+        "fromEmail": "agent@example.com", "toEmail": "owner@example.com",
+        "subject": "={{ 'New message from ' + $json.body.messages[0].name }}",
+        "text": "={{ $json.body.messages[0].body + '\\n\\nCall back: ' + $json.body.messages[0].phone + '\\n\\n' + $json.body.call.summary }}"
+      },
+      "id": "4", "name": "Email owner (SMTP/Gmail free)", "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1, "position": [740, 320]
+    },
+    {
+      "parameters": {
+        "operation": "append", "documentId": {"__rl": true, "mode": "id", "value": "YOUR_SHEET_ID"},
+        "sheetName": {"__rl": true, "mode": "name", "value": "Calls"},
+        "columns": {"mappingMode": "defineBelow", "value": {
+          "time": "={{ $json.body.call.started }}", "direction": "={{ $json.body.call.direction }}",
+          "phone": "={{ $json.body.call.phone }}", "outcome": "={{ $json.body.call.outcome }}",
+          "summary": "={{ $json.body.call.summary }}"}}
+      },
+      "id": "5", "name": "Log call to Google Sheets (free CRM)", "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4, "position": [980, 300]
+    }
+  ],
+  "connections": {
+    "Call completed (webhook)": {"main": [[{"node": "Route by outcome", "type": "main", "index": 0}]]},
+    "Route by outcome": {"main": [
+      [{"node": "Google Calendar event (free)", "type": "main", "index": 0}],
+      [{"node": "Email owner (SMTP/Gmail free)", "type": "main", "index": 0}],
+      [{"node": "Log call to Google Sheets (free CRM)", "type": "main", "index": 0}]
+    ]},
+    "Google Calendar event (free)": {"main": [[{"node": "Log call to Google Sheets (free CRM)", "type": "main", "index": 0}]]},
+    "Email owner (SMTP/Gmail free)": {"main": [[{"node": "Log call to Google Sheets (free CRM)", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"}
+}
