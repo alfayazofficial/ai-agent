@@ -1,0 +1,27 @@
+# Edit this file to make the agent yours. No code changes needed.
+name: "Bright Smile Dental"
+agent_name: "Ava"
+timezone: "America/New_York"
+transfer_number: ""          # human fallback, e.g. "+15551234567" (empty = take a message instead)
+address: "12 Main Street, Springfield"
+slot_minutes: 30
+hours:                       # 24h "open-close"; omit a day = closed
+  mon: "09:00-17:00"
+  tue: "09:00-17:00"
+  wed: "09:00-17:00"
+  thu: "09:00-17:00"
+  fri: "09:00-15:00"
+services:
+  - "Check-up and cleaning"
+  - "Teeth whitening"
+  - "Emergency visit"
+faqs:
+  - q: "What are your prices? How much does it cost?"
+    a: "A check-up and cleaning is 80 dollars. Whitening starts at 200 dollars. I can book you in and the team will confirm exact pricing."
+  - q: "Where are you located? What is your address?"
+    a: "We are at 12 Main Street, Springfield."
+  - q: "Do you take insurance?"
+    a: "Yes, we accept most major insurance plans. Bring your card to the visit."
+outbound:
+  purpose: "reminding you about your upcoming dental check-up and helping you book it"
+  calling_window: "09:00-19:00"   # local business time; the agent never dials outside it
